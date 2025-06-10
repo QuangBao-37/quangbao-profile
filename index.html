@@ -12,39 +12,98 @@
       color: #fff;
       text-align: center;
       overflow: hidden;
-      animation: pulse 3s infinite;
     }
     h1 {
       font-size: 48px;
-      margin-top: 40px;
+      margin-top: 30px;
       text-shadow: 0 0 20px #00f0ff;
     }
     .glow {
       text-shadow: 0 0 5px #0ff, 0 0 10px #0ff, 0 0 15px #0ff;
     }
     img {
-      margin-top: 30px;
+      margin-top: 20px;
       border-radius: 50%;
       width: 200px;
       height: 200px;
       box-shadow: 0 0 30px #0ff;
       border: 4px solid #fff;
     }
-    audio {
-      display: none;
+    #controls {
+      margin-top: 20px;
     }
-    @keyframes pulse {
-      0% { background-color: #000; }
-      50% { background-color: #111; }
-      100% { background-color: #000; }
+    button {
+      padding: 10px 20px;
+      font-size: 18px;
+      background-color: #0ff;
+      color: #000;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      box-shadow: 0 0 10px #0ff;
+    }
+    canvas {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      width: 100%;
+      height: 150px;
     }
   </style>
 </head>
 <body>
   <h1 class="glow">Quang Bảo ProFile</h1>
   <img src="avatar.jpg" alt="Ảnh đại diện">
-  <audio autoplay loop>
+  <div id="controls">
+    <button onclick="toggleAudio()">🔊 Tắt/Bật Nhạc</button>
+  </div>
+  <audio id="bgMusic" autoplay loop>
     <source src="music.mp3" type="audio/mpeg">
   </audio>
+  <canvas id="visualizer"></canvas>
+
+  <script>
+    const audio = document.getElementById("bgMusic");
+    const canvas = document.getElementById("visualizer");
+    const ctx = canvas.getContext("2d");
+
+    function toggleAudio() {
+      if (audio.paused) {
+        audio.play();
+      } else {
+        audio.pause();
+      }
+    }
+
+    const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    const analyser = audioCtx.createAnalyser();
+    const source = audioCtx.createMediaElementSource(audio);
+    source.connect(analyser);
+    analyser.connect(audioCtx.destination);
+    analyser.fftSize = 256;
+
+    const bufferLength = analyser.frequencyBinCount;
+    const dataArray = new Uint8Array(bufferLength);
+
+    function draw() {
+      requestAnimationFrame(draw);
+
+      analyser.getByteFrequencyData(dataArray);
+      ctx.fillStyle = "#000";
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+      const barWidth = (canvas.width / bufferLength) * 2.5;
+      let x = 0;
+
+      for (let i = 0; i < bufferLength; i++) {
+        const barHeight = dataArray[i];
+        ctx.fillStyle = `rgb(${barHeight + 100},0,255)`;
+        ctx.fillRect(x, canvas.height - barHeight / 2, barWidth, barHeight / 2);
+        x += barWidth + 1;
+      }
+    }
+
+    draw();
+  </script>
 </body>
 </html>
